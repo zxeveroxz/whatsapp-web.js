@@ -16,6 +16,7 @@ client.initialize();
 
 client.on('qr', (qr) => {
     // NOTE: This event will not be fired if a session is specified.
+    
     console.log('QR RECEIVED', qr);
 });
 
@@ -39,7 +40,7 @@ client.on('ready', () => {
 });
 
 client.on('message', async msg => {
-    console.log('MESSAGE RECEIVED', msg);
+    //console.log('MESSAGE RECEIVED', msg);
 
     if (msg.body == '!ping reply') {
         // Send a new message as a reply to the current one
@@ -47,6 +48,7 @@ client.on('message', async msg => {
 
     } else if (msg.body == '!ping') {
         // Send a new message to the same chat
+        console.log("Enviado desde: "+msg.from);
         client.sendMessage(msg.from, 'pong');
 
     } else if (msg.body.startsWith('!sendto ')) {
@@ -57,6 +59,7 @@ client.on('message', async msg => {
         number = number.includes('@c.us') ? number : `${number}@c.us`;
         let chat = await msg.getChat();
         chat.sendSeen();
+        console.log(number);
         client.sendMessage(number, message);
 
     } else if (msg.body.startsWith('!subject ')) {

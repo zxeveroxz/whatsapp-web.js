@@ -70,8 +70,10 @@ class Client extends EventEmitter {
         if (this.options.session) {
             // Check if session restore was successfull 
             try {
+                
                 await page.waitForSelector(KEEP_PHONE_CONNECTED_IMG_SELECTOR, { timeout: this.options.authTimeoutMs });
             } catch (err) {
+                
                 if (err.name === 'TimeoutError') {
                     /**
                      * Emitted when there has been an error while trying to restore an existing session
@@ -92,6 +94,8 @@ class Client extends EventEmitter {
             }
 
         } else {
+
+            
             const getQrCode = async () => {
                 // Check if retry button is present
                 var QR_RETRY_SELECTOR = 'div[data-ref] > span > div';
@@ -106,6 +110,8 @@ class Client extends EventEmitter {
                 await page.waitForSelector(QR_CANVAS_SELECTOR, { timeout: this.options.qrTimeoutMs });
                 const qrImgData = await page.$eval(QR_CANVAS_SELECTOR, canvas => [].slice.call(canvas.getContext('2d').getImageData(0, 0, 264, 264).data));
                 const qr = jsQR(qrImgData, 264, 264).data;
+
+                //console.log(qr);
                 /**
                 * Emitted when the QR code is received
                 * @event Client#qr
