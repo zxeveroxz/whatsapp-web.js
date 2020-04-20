@@ -1,4 +1,19 @@
 /* eslint-disable linebreak-style */
+var express = require('express');
+var app = express();
+var server = require('http').Server(app);
+
+var io = require('socket.io')(server);
+
+var qrw = null;
+
+app.use(express.static('public'));
+
+app.get('/demo',(req,res)=>{
+    res.status("200").send("ok, listo");
+});
+
+
 const fs = require('fs');
 const { Client, Location } = require('./index');
 
@@ -8,7 +23,7 @@ if (fs.existsSync(SESSION_FILE_PATH)) {
     sessionCfg = require(SESSION_FILE_PATH);
 }
 
-const client = new Client({ puppeteer: { headless: false }, session: sessionCfg });
+const client = new Client({ puppeteer: { headless: true }, session: sessionCfg });
 // You can use an existing session and avoid scanning a QR code by adding a "session" object to the client options.
 // This object must include WABrowserId, WASecretBundle, WAToken1 and WAToken2.
 
@@ -16,8 +31,9 @@ client.initialize();
 
 client.on('qr', (qr) => {
     // NOTE: This event will not be fired if a session is specified.
-    
+    qrw = qr;
     console.log('QR RECEIVED', qr);
+    console.log("nuevo qr",qrw);
 });
 
 client.on('authenticated', (session) => {
@@ -33,6 +49,10 @@ client.on('authenticated', (session) => {
 client.on('auth_failure', msg => {
     // Fired if session restore was unsuccessfull
     console.error('AUTHENTICATION FAILURE', msg);
+    fs.unlink(SESSION_FILE_PATH, (err) =>{
+        if (err) throw err;        
+        console.log('Session eliminada...');
+    }); 
 });
 
 client.on('ready', () => {
@@ -251,3 +271,25 @@ client.on('disconnected', (reason) => {
     console.log('Client was logged out', reason);
 });
 
+
+io.on('connection',(socket)=>{
+    console.log("NUeva conexion");
+
+    socket.on("iniciar",(data)=>{
+        client.initialize();
+        socket.emit("iniciar","se inicio el cliente");
+    });
+
+    
+
+    socket.on("msg",(data)=>{
+        socket.emit("mesaje1",qrw);
+    });
+
+    socket.emit("mesaje1",qrw);
+
+
+});
+server.listen(3000,()=>{
+    console.log("servidor corriendo el puerto 3000");
+});
