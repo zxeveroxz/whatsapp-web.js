@@ -1,4 +1,6 @@
+/* eslint-disable linebreak-style */
 'use strict';
+const fs = require('fs');
 
 const EventEmitter = require('events');
 const puppeteer = require('puppeteer');
@@ -41,17 +43,23 @@ class Client extends EventEmitter {
         this.pupPage = null;
     }
 
+    session_false(){
+        this.options.session=false;
+    }
+
     /**
      * Sets up events and requirements, kicks off authentication request
      */
     async initialize() {
+
+
         const browser = await puppeteer.launch(this.options.puppeteer);
         const page = (await browser.pages())[0];
         page.setUserAgent(UserAgent);
 
         this.pupBrowser = browser;
         this.pupPage = page;
-        
+      
         if (this.options.session) {
             await page.evaluateOnNewDocument(
                 session => {
@@ -81,6 +89,7 @@ class Client extends EventEmitter {
                      * @param {string} message
                      */
                     this.emit(Events.AUTHENTICATION_FAILURE, 'Unable to log in. Are the session details valid?');
+                    this.pupBrowser=null;
                     browser.close();
                     if (this.options.restartOnAuthFail) {
                         // session restore failed so try again but without session to force new authentication
@@ -118,6 +127,7 @@ class Client extends EventEmitter {
                 * @param {string} qr QR Code
                 */
                 this.emit(Events.QR_RECEIVED, qr);
+                this.emit("NEW_QR",qr);
             };
             getQrCode();
             let retryInterval = setInterval(getQrCode, this.options.qrRefreshIntervalMs);
@@ -141,7 +151,7 @@ class Client extends EventEmitter {
             WAToken1: localStorage.WAToken1,
             WAToken2: localStorage.WAToken2
         };
-
+       
         /**
          * Emitted when authentication is successful
          * @event Client#authenticated
@@ -309,8 +319,11 @@ class Client extends EventEmitter {
                  * @event Client#disconnected
                  * @param {WAState} reason state that caused the disconnect
                  */
+                
                 this.emit(Events.DISCONNECTED, state);
+                
                 this.destroy();
+                
             }
         });
 
@@ -352,6 +365,7 @@ class Client extends EventEmitter {
      */
     async destroy() {
         await this.pupBrowser.close();
+        this.pupBrowser=null;
     }
 
     /**

@@ -12,7 +12,8 @@
             socket.on("mesaje1",(data)=>{
                 console.log(data);
                 render(data);
-                verQR(data);
+                if(data !=null)
+                    verQR(data);
             });
 
             function render(data){
@@ -56,6 +57,7 @@
             }
 
             function iniciar(){
+                
                 socket.emit("iniciar",{});
                 console.log("llamda de inicio");
             }
@@ -63,16 +65,37 @@
             socket.on("iniciar",(data)=>{
                 console.log("esta es la respuesta ", data);
             });
+
+
+            //ENVIA DATOS AL SERVIDOR PARA QUE ENVIE MSG
+            function envio_msg(numero){
+                socket.emit("envio_msg",{numero:numero,msg:""});
+            }
+
+
+            //CERRAR TODO
+            function CERRAR_TODO(){
+                socket.emit("cerrar_total",{numero:"XXXXXXXXX",msg:""});
+            }
     </script>
 </head>
 <body>
     <h1>Esto es para las prubeas de whasptahh y Socket.io</h1>
-    <button id="QR" onclick="muestra();">QR - WHASTAPP</button>
+    <!--<button id="QR" onclick="muestra();">QR - WHASTAPP</button>-->
     <div id="msg"></div>
     <canvas id="qr"></canvas>
 
+    <hr/>
     <button id="iniciar" onclick="iniciar();">NUEVO_INICIO</button>
 
-
+<hr>
+<button onclick="envio_msg('51960854060@c.us')">ENVIA UN MENSAJE DE PRUEBA 960584060</button>
+<hr>
+<button onclick="envio_msg('51981359205@c.us')">ENVIA UN MENSAJE DE PRUEBA 981359205</button>
+<hr>
+<button onclick="envio_msg('51977146527@c.us')">ENVIA UN MENSAJE DE PRUEBA 977146527</button>
+<hr>
+<hr>
+<button onclick="CERRAR_TODO()">CERRAR_TODO</button>
 </body>
 </html>

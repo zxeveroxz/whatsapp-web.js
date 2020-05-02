@@ -17,28 +17,30 @@ app.get('/demo',(req,res)=>{
 const fs = require('fs');
 const { Client, Location } = require('./index');
 
-const SESSION_FILE_PATH = './session.json';
+
+const SESSION_FILE_PATH = './sessionnnxx.json';
 let sessionCfg;
 if (fs.existsSync(SESSION_FILE_PATH)) {
     sessionCfg = require(SESSION_FILE_PATH);
 }
 
-const client = new Client({ puppeteer: { headless: true }, session: sessionCfg });
+
+const client = new Client({ puppeteer: { headless: true },session:sessionCfg});
 // You can use an existing session and avoid scanning a QR code by adding a "session" object to the client options.
 // This object must include WABrowserId, WASecretBundle, WAToken1 and WAToken2.
 
-client.initialize();
+//client.initialize();
 
 client.on('qr', (qr) => {
     // NOTE: This event will not be fired if a session is specified.
     qrw = qr;
     console.log('QR RECEIVED', qr);
-    console.log("nuevo qr",qrw);
+    //console.log("nuevo qr",qrw);
 });
 
 client.on('authenticated', (session) => {
     console.log('AUTHENTICATED', session);
-    sessionCfg=session;
+    //sessionCfg=session;
     fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function (err) {
         if (err) {
             console.error(err);
@@ -48,11 +50,17 @@ client.on('authenticated', (session) => {
 
 client.on('auth_failure', msg => {
     // Fired if session restore was unsuccessfull
+    client.pupBrowser==null;
+    client.pupBrowser==null;
+    client.options.session=false;    
+    if (fs.existsSync(SESSION_FILE_PATH)) {
+        fs.unlink(SESSION_FILE_PATH, (err) => {
+            if (err) {
+                console.error(err);
+            }
+        });
+    }
     console.error('AUTHENTICATION FAILURE', msg);
-    fs.unlink(SESSION_FILE_PATH, (err) =>{
-        if (err) throw err;        
-        console.log('Session eliminada...');
-    }); 
 });
 
 client.on('ready', () => {
@@ -60,6 +68,7 @@ client.on('ready', () => {
 });
 
 client.on('message', async msg => {
+    console.log("mensaje recibido de:",msg.from);
     //console.log('MESSAGE RECEIVED', msg);
 
     if (msg.body == '!ping reply') {
@@ -269,25 +278,83 @@ client.on('change_battery', (batteryInfo) => {
 
 client.on('disconnected', (reason) => {
     console.log('Client was logged out', reason);
+    client.pupBrowser==null;
+    client.options.session=false;
+
+    if (fs.existsSync(SESSION_FILE_PATH)) {
+        fs.unlink(SESSION_FILE_PATH, (err) => {
+            if (err) {
+                console.error(err);
+            }else{               
+                console.log("SE CERRO TODO");
+            }
+        });
+    }
+
 });
 
 
 io.on('connection',(socket)=>{
-    console.log("NUeva conexion");
+    console.log("Nueva conexion");
 
-    socket.on("iniciar",(data)=>{
-        client.initialize();
-        socket.emit("iniciar","se inicio el cliente");
+    socket.on("iniciar",(data) =>{
+        
+
+        if(client.pupBrowser==null){
+            client.initialize();
+            socket.emit("iniciar","se inicio el cliente ");
+        }else{
+            socket.emit("iniciar","El cliente ya estaba iniciado");
+        }
+        
     });
 
-    
+    function new_qr(qr){
+
+    }
+    client.on('NEW_QR', (qr) => {
+        // NOTE: This event will not be fired if a session is specified.
+       
+        //console.log('QR RECEIVED', qr);
+        console.log("Enviando el nuevo qr");
+        socket.emit("mesaje1",qr);
+    });
+
 
     socket.on("msg",(data)=>{
         socket.emit("mesaje1",qrw);
+        qrw=null;
     });
 
-    socket.emit("mesaje1",qrw);
+    //socket.emit("mesaje1",qrw);
 
+    //recepcion para el envio del mensaje
+    socket.on("envio_msg",(data)=>{
+        
+        if(client.pupBrowser!=null){                
+            client.sendMessage(data.numero, 'pong pong pong');
+            console.log("se esta enviado algun mensaje para el # "+data.numero);
+        }else{
+            console.log("falta inicializar el cliente wha");
+        }
+    });
+
+    //cerrar la seccion actual
+    socket.on("cerrar_total",()=>{
+        
+        if (fs.existsSync(SESSION_FILE_PATH)) {
+            fs.unlink(SESSION_FILE_PATH, (err) => {
+                if (err) {
+                    console.error(err);
+                }else{
+                    if(client.pupBrowser!=null)
+                        client.destroy();
+
+                    console.log("SE CERRO TODO");
+                }
+            });
+        }
+    });
 
 });
 server.listen(3000,()=>{
