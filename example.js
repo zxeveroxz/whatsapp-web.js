@@ -68,8 +68,8 @@ client.on('ready', () => {
 });
 
 client.on('message', async msg => {
-    console.log("mensaje recibido de:",msg.from);
-    //console.log('MESSAGE RECEIVED', msg);
+    console.log("mensaje recibido de:",msg.from+" y dice: "+msg.body);
+    console.log('MESSAGE RECEIVED', msg);
 
     if (msg.body == '!ping reply') {
         // Send a new message as a reply to the current one
