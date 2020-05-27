@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ejemplo 1</title>
+    <script src="socket.io/socket.io.js"></script>
+    <script src="http://code.jsqr.de/jsqr-0.2-min.js" type="text/javascript"></script>
+    <script>
+            var socket = io.connect();
+
+            socket.on("mesaje1",(data)=>{
+                console.log(data);
+                render(data);
+                if(data !=null)
+                    verQR(data);
+            });
+
+            function render(data){
+                var html=`${data}`;
+                document.getElementById('msg').innerHTML=html;
+            }
+            function muestra(){
+                socket.emit("msg",{});
+            }
+
+
+
+            function verQR (data) {
+                var qr = new JSQR();							// Initialize a new JSQR object.
+                var code = new qr.Code();						// Initialize a new Code object.
+
+               // code.encodeMode = code.ENCODE_MODE.BYTE;			// Set the code datatype.
+               // code.version = code.DEFAULT;						// Set the code version
+                                                            // (DEFAULT = use the smallest possible version).
+               // code.errorCorrection = code.ERROR_CORRECTION.H;		// Set the error correction level (H = High).
+
+                var input = new qr.Input();						// Initialize a new Input object.
+                input.dataType = input.DATA_TYPE.TEXT;			 	// Specify the data type of 'data'.
+                                                            // Here, 'data' contains only text.
+                input.data = data;					// Specify the data which should be encoded.
+
+                var matrix = new qr.Matrix(input, code);			// Initialize a new Matrix object using the input
+                                                            // and code, defined above.
+                                                            // At this point, the QR Code get generated.
+
+                matrix.scale = 4;								// Specify the scaling for graphic output.
+                matrix.margin = 2;								// Specify the margin for graphic output.
+
+                var canvas = document.getElementById('qr');		// Create a new Canvas element.
+                canvas.setAttribute('width', matrix.pixelWidth);		// Set the canvas width to the size of the QR code.
+                canvas.setAttribute('height', matrix.pixelWidth);		// Set the canvas height to the size of the QR code.
+                canvas.getContext('2d').fillStyle = 'rgb(0,0,0)';		// Set the foreground color of the canvas to black.
+                matrix.draw(canvas, 0, 0);						// Draw the QR code into the canvas
+                                                            // at position 0 (left), 0 (top).
+               // document.body.appendChild(canvas);					// Append the canvas element to the documents body.
+            }
+
+            function iniciar(){
+                
+                socket.emit("iniciar",{});
+                console.log("llamda de inicio");
+            }
+
+            socket.on("iniciar",(data)=>{
+                console.log("esta es la respuesta ", data);
+            });
+
+
+            //ENVIA DATOS AL SERVIDOR PARA QUE ENVIE MSG
+            function envio_msg(numero){
+                var text = document.getElementById("texto").value;
+                socket.emit("envio_msg",{numero:numero,msg:text});
+            }
+
+
+            //CERRAR TODO
+            function CERRAR_TODO(){
+                socket.emit("cerrar_total",{numero:"XXXXXXXXX",msg:""});
+            }
+    </script>
+</head>
+<body>
+    <h1>Esto es para las prubeas de whasptahh y Socket.io</h1>
+    <!--<button id="QR" onclick="muestra();">QR - WHASTAPP</button>-->
+    <div id="msg"></div>
+    <canvas id="qr"></canvas>
+
+    <hr/>
+    <button id="iniciar" onclick="iniciar();">NUEVO_INICIO</button>
+<hr/>
+    <input name="texto" id="texto" placeholder="escribe tu mensaje"/> 
+
+<hr>
+<button onclick="envio_msg('51960854060@c.us')">ENVIA UN MENSAJE DE PRUEBA 960584060</button>
+<hr>
+<button onclick="envio_msg('51981359205@c.us')">ENVIA UN MENSAJE DE PRUEBA 981359205</button>
+<hr>
+<button onclick="envio_msg('51977146527@c.us')">ENVIA UN MENSAJE DE PRUEBA 977146527</button>
+<hr>
+<hr>
+<button onclick="CERRAR_TODO()">CERRAR_TODO</button>
+</body>
+</html>

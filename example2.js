@@ -8,6 +8,9 @@ var moment = require('moment');
 var qrw = null;
 var tokenHoy = null;
 
+var utmObj = require('utm-latlng');
+var UTM=new utmObj(); //Default Ellipsoid is 'WGS 84'
+
 app.use(express.static('public'));
 
 app.get('/demo',(req,res)=>{
@@ -334,9 +337,22 @@ io.on('connection',(socket)=>{
         
         if(client.pupBrowser!=null){      
             buscar_data(data.msg,function(resp){
-                resp = resp.replace(/([\ \t]+(?=[\ \t])|^\s+|\s+$)/g, '');
-                console.log('ESTO ES LA BUSQUEDA: '+resp);
-                client.sendMessage(data.numero, resp);
+                var mensa = resp.respuesta.replace(/([\ \t]+(?=[\ \t])|^\s+|\s+$)/g, '');
+
+                if(resp.error!=""){
+                    client.sendMessage(data.numero, resp.error);
+                }else{
+                    client.sendMessage(data.numero, mensa);
+                    if(resp.location.length>0){
+                        var loca = new Location(resp.location[0],resp.location[1]);
+                        client.sendMessage(data.numero, loca);
+                    }
+
+                }
+                //resp = resp.replace(/([\ \t]+(?=[\ \t])|^\s+|\s+$)/g, '');
+                //console.log('ESTO ES LA BUSQUEDA: '+resp);
+                //var loca = new Location(-11.925729751586914,-77.05916595458984,resp);
+               
             });          
             
             //await client.sendMessage(data.numero, data.msg+": "+resp);
@@ -407,31 +423,45 @@ function buscar_data(nis, callback){
     console.log(tokenHoy);
     //console.log("Se va a buscar esto: "+nis);    
     //http://gisprd.sedapal.com.pe/arcgis/tokens/generateToken    //'username' => "gisweb",  //'password' => "AbCd123.",
-    var url_ruta = 'http://gisprd.sedapal.com.pe/arcgis/rest/services/ConexDomSGC/MapServer/0/query?where=SUPPLYID+%3D%27'+nis+'%27&relationParam=&outFields=NOM_MUNIC%2CNOM_CALLE%2CNUM_PUERTA%2CDUPLICADOR%2CNUM_APA%2CDIAMETRO_CONEXION%2CDESC_EST_SUM&returnGeometry=false&returnTrueCurves=false&returnIdsOnly=false&returnCountOnly=false&returnZ=false&returnM=false&returnDistinctValues=false&resultRecordCount=1&f=pjson&token='+tokenHoy;
-    console.log(url_ruta);
-    request.get(url_ruta,{},  (error,res,body)=>{
+    //var url_ruta = 'http://gisprd.sedapal.com.pe/arcgis/rest/services/ConexDomSGC/MapServer/0/query?where=SUPPLYID+%3D%27'+nis+'%27&relationParam=&outFields=NOM_MUNIC%2CNOM_CALLE%2CNUM_PUERTA%2CDUPLICADOR%2CNUM_APA%2CDIAMETRO_CONEXION%2CDESC_EST_SUM&returnGeometry=false&returnTrueCurves=false&returnIdsOnly=false&returnCountOnly=false&returnZ=false&returnM=false&returnDistinctValues=false&resultRecordCount=1&f=pjson&token='+tokenHoy;
+    var url_ruta2= `http://gisprd.sedapal.com.pe/arcgis/rest/services/AguaPotable/MapServer/35/query?where=SUPPLYID+IN+(%27${nis}%27)+&relationParam=&outFields=NOM_CALLE,NUM_PUERTA,DUPLICADOR,NOM_LOCAL,NOM_MUNIC,DESC_EST_SUM,NUM_APA,DIAMETRO_CONEXION,COD_SECTOR,IMP_TOT_REC,FRECUENCIA&returnGeometry=true&returnTrueCurves=false&returnIdsOnly=false&returnCountOnly=false&returnZ=false&returnM=false&returnDistinctValues=false&resultRecordCount=&f=pjson`;
+    
+    console.log(url_ruta2);
+    request.get(url_ruta2,{},  (error,res,body)=>{
     
         if (error) {  console.log(error);  return ;   }
         
         var data2  = JSON.parse(body);  
-        console.log(data2);
+        console.log(data2['features']);
         //console.log('NIS encontrados: '+ data2['features'].length);
+
        
-        var respuesta = '';
+       
+        var respuesta = {'respuesta':'','error':'','location':[]};
         if (typeof data2.error !== 'undefined') {
             //console.log("error cuando se produce un error: "+data2.error);
-            respuesta = 'Error detectado: '+data2.error.message;
+            respuesta.error = 'Error detectado: '+data2.error.message;
             //return;
         }else{
 
             if(data2['features'].length > 0){
+                var coo = data2['features'][0].geometry;
+                //console.log(coo);
+                var ress = UTM.convertUtmToLatLng(coo.x, coo.y, 18,'ss');
+                console.log('Esto son las coordenadas => ',ress);
+
                 var obj = [];
                 obj = data2['features'][0].attributes;
                 //console.log(obj.NOM_CALLE);
-                respuesta = ` *NIS: ${nis}* => *${obj.NUM_APA}*
-                            \`\`\`DIR: ${obj.NOM_CALLE} ${obj.NUM_PUERTA} ${obj.DUPLICADOR} - ${obj.NOM_MUNIC}\`\`\`
+                respuesta.respuesta = ` *NIS: ${nis}* => *${obj.NUM_APA}*
+                            \`\`\`DIR: ${obj.NOM_CALLE} ${obj.NUM_PUERTA==0?'':obj.NUM_PUERTA} ${obj.DUPLICADOR} - ${obj.NOM_MUNIC}\`\`\`
                             \`\`\`DIA: ${obj.DIAMETRO_CONEXION}MM\`\`\`
-                            \`\`\`EST: ${obj.DESC_EST_SUM}\`\`\``;
+                            \`\`\`EST: ${obj.DESC_EST_SUM.toUpperCase()}\`\`\``;
+
+                if(ress.lat!="" && ress.lng!=""){
+                    respuesta.location=[ress.lat,ress.lng];
+                }
+                
             }      
 
         }
