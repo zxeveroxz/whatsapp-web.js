@@ -475,6 +475,6 @@ function buscar_data(nis, callback){
 }
 
 //obtenerToken();
-server.listen(3000,()=>{
-    console.log('servidor corriendo el puerto 3000');
+server.listen(7070,()=>{
+    console.log('servidor corriendo el puerto 7070');
 });
